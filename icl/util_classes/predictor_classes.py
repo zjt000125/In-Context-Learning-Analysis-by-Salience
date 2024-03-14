@@ -29,7 +29,8 @@ class Predictor:
                                 tokenizer.encode(':', add_special_tokens=False)[0]]
         else:
             raise NotImplementedError(f"task_name: {task_name}")
-
+    
+    # TODO: Change the position of the class for llama
     def get_pos(self, inputs):
         label_id_dict = self.label_id_dict
         pad_token_id = self.pad_token_id
