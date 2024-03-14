@@ -63,7 +63,7 @@ class QKVGetterManger:
 
     def register_qkvgetter_to_model(self):
         qkvgetters = []
-        if self.model.model_name in ['gpt2-xl','gpt-j-6b']:
+        if self.model.model_name in ['gpt2-xl','gpt-j-6b', 'meta-llama/Llama-2-7b-chat-hf']:
             for i, layer in enumerate(self.model.model.transformer.h):
                 qkvgetter = QKVGetter()
                 qkvgetters.append(qkvgetter)

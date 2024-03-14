@@ -107,11 +107,13 @@ def get_max_length(tokenizer):
         return default_max_length_dict[tokenizer.name_or_path]
     max_length = tokenizer.max_len_single_sentence
     if max_length > 10000000:
-        max_length = tokenizer.model_max_length
-    if max_length > 10000000:
-        raise ValueError(
-            f"Your tokenizer has a very large `max_len_single_sentence` value: {max_length}, "
-            f"you may add this to tokenizer's config, or add it to `default_max_length_dict` above")
+        # max_length = tokenizer.model_max_length
+        max_length = 10000000
+    # TODO: add this to tokenizer's config
+    # if max_length > 10000000:
+    #     raise ValueError(
+    #         f"Your tokenizer has a very large `max_len_single_sentence` value: {max_length}, "
+    #         f"you may add this to tokenizer's config, or add it to `default_max_length_dict` above")
     return max_length
 
 

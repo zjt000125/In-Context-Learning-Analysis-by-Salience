@@ -4,6 +4,7 @@ import warnings
 from dataclasses import field, dataclass
 from typing import List, Optional
 from ..project_constants import FOLDER_ROOT
+import torch
 
 
 def set_default_to_empty_string(v, default_v, activate_flag):
@@ -16,8 +17,9 @@ def set_default_to_empty_string(v, default_v, activate_flag):
 
 @dataclass
 class DeepArgs:
-    task_name: str = "sst2"
+    task_name: str = "trec"   # TODO: change the dataset
     model_name: str = "gpt2-xl"
+    # model_name: str = "meta-llama/Llama-2-7b-chat-hf"
     seeds: List[int] = field(default_factory=lambda: [42])
     sample_size: int = 1000
     demonstration_shot: int = 1
@@ -28,6 +30,7 @@ class DeepArgs:
     batch_size: int = 1
     save_folder: str = os.path.join(FOLDER_ROOT, 'results', 'deep')
     using_old: bool = False
+    torch_dtype = torch.float32  # TODO: Change this to torch.float16
 
     @property
     def save_file_name(self):
@@ -43,7 +46,7 @@ class DeepArgs:
         assert self.demonstration_from in ['train']
         assert self.sample_from in ['test']
         assert self.task_name in ['sst2', 'agnews', 'trec', 'emo']
-        assert self.model_name in ['gpt2-xl', 'gpt-j-6b']
+        assert self.model_name in ['gpt2-xl', 'gpt-j-6b', 'meta-llama/Llama-2-7b-chat-hf']
         assert 'cuda:' in self.device
         self.gpu = int(self.device.split(':')[-1])
         self.actual_sample_size = self.sample_size
@@ -102,6 +105,23 @@ class CompressTimeArgs(DeepArgs):
 class AttrArgs(DeepArgs):
     save_folder: str = os.path.join(FOLDER_ROOT, 'results', 'attr')
 
+# TODO: Add unbalanced
+@dataclass
+class AttrArgs_unbalanced(DeepArgs):
+    save_folder: str = os.path.join(FOLDER_ROOT, 'results_unbalanced', 'attr')
+    demonstration_shots: List[int] = field(default_factory=lambda: [1, 4, 1, 1, 1, 1])
+    torch_dtype = torch.float16
+
+    @property
+    def save_file_name(self):
+        file_name = (
+            f"{self.task_name}_{self.model_name}_{self.demonstration_shot}_{self.demonstration_from}"
+            f"_{self.sample_from}_{self.sample_size}_{'_'.join([str(seed) for seed in self.seeds])}")
+        file_name += set_default_to_empty_string(self.demonstration_total_shot, None,
+                                                 self.using_old)
+        file_name += f'_{"_".join([str(shot) for shot in self.demonstration_shots])}'
+        file_name = os.path.join(self.save_folder, file_name)
+        return file_name
 
 @dataclass
 class ShallowArgs(DeepArgs):

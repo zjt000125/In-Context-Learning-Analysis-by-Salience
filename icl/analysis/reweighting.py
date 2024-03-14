@@ -85,7 +85,7 @@ def train(args: ReweightingArgs):
         num_layer = get_model_layer_num(model=model.model, model_name=args.model_name)
         predictor = Predictor(label_id_dict=args.label_id_dict, pad_token_id=tokenizer.pad_token_id,
                               task_name=args.task_name, tokenizer=tokenizer, layer=num_layer)
-        if args.model_name in ['gpt2-xl']:
+        if args.model_name in ['gpt2-xl', 'gpt-j-6b', 'meta-llama/Llama-2-7b-chat-hf']:
             attentionermanger = GPT2AttentionerManager(model.model, len(demonstration),
                                                        predictor=predictor,
                                                        device=model.device, n_head = args.n_head)

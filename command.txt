@@ -1,0 +1,16 @@
+CUDA_LAUNCH_BLOCKING=1 python attention_attr.py --model_name 'meta-llama/Llama-2-7b-chat-hf'
+
+
+
+/home/jiantong/project/python/label-words-are-anchors/icl/utils/prepare_model_and_tokenizer.py:29: UserWarning:  Negative in sst2 has token_num: 3 which is not 1
+  warnings.warn(f"{v} in {args.task_name} has token_num: {token_num} which is not 1")
+/home/jiantong/project/python/label-words-are-anchors/icl/utils/prepare_model_and_tokenizer.py:29: UserWarning:  Positive in sst2 has token_num: 3 which is not 1
+  warnings.warn(f"{v} in {args.task_name} has token_num: {token_num} which is not 1")
+LMForwardAPI: set device to cuda:0
+/home/jiantong/project/python/label-words-are-anchors/attention_attr.py:73: UserWarning: sample_size: 1000 is larger than test set size: 872,actual_sample_size is 872
+  warnings.warn(
+0it [00:00, ?it/s]/home/jiantong/project/python/label-words-are-anchors/attention_attr.py:142: RuntimeWarning: invalid value encountered in divide
+  proportion1 = proportion1 / sum(class_poss)
+/home/jiantong/project/python/label-words-are-anchors/attention_attr.py:143: RuntimeWarning: invalid value encountered in divide
+  proportion2 = proportion2 / len(class_poss)
+872it [01:51,  7.84it/s]

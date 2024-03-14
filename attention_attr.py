@@ -20,18 +20,29 @@ from transformers import Trainer, TrainingArguments, PreTrainedModel, AutoModelF
     AutoTokenizer
 from icl.utils.load_local import convert_path_old, load_local_model_or_tokenizer, \
     get_model_layer_num
-from icl.util_classes.arg_classes import AttrArgs
+from icl.util_classes.arg_classes import AttrArgs, AttrArgs_unbalanced
 from icl.util_classes.predictor_classes import Predictor
 from transformers import HfArgumentParser
 from datasets import concatenate_datasets
 from datasets.utils.logging import disable_progress_bar
 import icl.analysis.attentioner_for_attribution
 from icl.analysis.attentioner_for_attribution import AttentionAdapter, \
-    GPT2AttentionerManager
+    GPT2AttentionerManager, llamaAttentionerManager
 from icl.utils.other import dict_to
 
-hf_parser = HfArgumentParser((AttrArgs,))
-args: AttrArgs = hf_parser.parse_args_into_dataclasses()[0]
+import pdb
+
+'''
+hf_parser = HfArgumentParser((AttrArgs,)): This line creates an instance of the HfArgumentParser class. The parser is used to handle command-line arguments for a specific task. In this case, it's designed to parse arguments related to the AttrArgs class.
+args: AttrArgs = hf_parser.parse_args_into_dataclasses()[0]: Here's what happens:
+hf_parser.parse_args_into_dataclasses() parses the command-line arguments and returns a list of data classes (in this case, only one data class).
+[0] accesses the first element of the list (since there's only one data class).
+args: AttrArgs assigns the parsed arguments to an instance of the AttrArgs data class.
+'''
+hf_parser = HfArgumentParser((AttrArgs_unbalanced,))   # TODO: Change this to AttrArgs
+args: AttrArgs_unbalanced = hf_parser.parse_args_into_dataclasses()[0]   # TODO: Change this to AttrArgs
+
+# pdb.set_trace()
 
 set_gpu(args.gpu)
 if args.sample_from == 'test':
@@ -39,6 +50,7 @@ if args.sample_from == 'test':
 else:
     raise NotImplementedError(f"sample_from: {args.sample_from}")
 
+print('The current model name is', args.model_name)
 model, tokenizer = load_model_and_tokenizer(args)
 args.label_id_dict = get_label_id_dict_for_args(args, tokenizer)
 
@@ -47,7 +59,6 @@ args.label_id_dict = get_label_id_dict_for_args(args, tokenizer)
 model = LMForwardAPI(model=model, model_name=args.model_name, tokenizer=tokenizer,
                      device='cuda:0',
                      label_dict=args.label_dict)
-
 
 num_layer = get_model_layer_num(model=model.model, model_name=args.model_name)
 predictor = Predictor(label_id_dict=args.label_id_dict, pad_token_id=tokenizer.pad_token_id,
@@ -68,13 +79,18 @@ def prepare_analysis_dataset(seed):
     demonstration = dataset['train']
     class_num = len(set(demonstration['label']))
     np_labels = np.array(demonstration['label'])
-    ids_for_demonstrations = [np.where(np_labels == class_id)[0] for class_id in range(class_num)]
+    
+    # sst2: label_dict = {0: ' Negative', 1: ' Positive'}
+    ids_for_demonstrations = [np.where(np_labels == class_id)[0] for class_id in range(class_num)]  # [array([    0,     1,     3, ..., 67342, 67345, 67348]), array([    2,     6,     7, ..., 67344, 67346, 67347])]
+    
     demonstrations_contexted = []
     np.random.seed(seed)
     for i in range(len(test_sample)):
         demonstration_part_ids = []
-        for _ in ids_for_demonstrations:
-            demonstration_part_ids.extend(np.random.choice(_, args.demonstration_shot))
+        for j, _ in enumerate(ids_for_demonstrations):
+            # TODO: Change this to args.demonstration_shots(unbalanced)
+            # demonstration_part_ids.extend(np.random.choice(_, args.demonstration_shot))
+            demonstration_part_ids.extend(np.random.choice(_, args.demonstration_shots[j]))
         demonstration_part = demonstration.select(demonstration_part_ids)
         demonstration_part = demonstration_part.shuffle(seed=seed)
         demonstration_part = wrap_dataset(test_sample.select([i]), demonstration_part,
@@ -90,8 +106,10 @@ def prepare_analysis_dataset(seed):
 
 demonstrations_contexted = prepare_analysis_dataset(args.seeds[0])
 
-if args.model_name in ['gpt2-xl']:
+if args.model_name in ['gpt2-xl', 'gpt-j-6b']:
     attentionermanger = GPT2AttentionerManager(model.model)
+elif args.model_name in ['meta-llama/Llama-2-7b-chat-hf']:
+    attentionermanger = llamaAttentionerManager(model.model)
 else:
     raise NotImplementedError(f"model_name: {args.model_name}")
 
@@ -131,10 +149,11 @@ pros_list = []
 
 for idx, data in tqdm(enumerate(analysis_dataloader)):
     data = dict_to(data, model.device)
-    print(data['input_ids'].shape)
     attentionermanger.zero_grad()
     output = model(**data)
     label = data['labels']
+    # TODO: change to adapt to llama2 outputs
+    # loss = F.cross_entropy(output['logits'][0].float(), label.float())
     loss = F.cross_entropy(output['logits'], label)
     loss.backward()
     class_poss, final_poss = predictor.get_pos({'input_ids': attentionermanger.input_ids})

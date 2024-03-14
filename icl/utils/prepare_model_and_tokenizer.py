@@ -7,13 +7,13 @@ from ..util_classes.arg_classes import DeepArgs
 
 
 def load_model_and_tokenizer(args: DeepArgs):
-    if args.model_name in ['gpt2-xl', 'gpt-j-6b']:
+    if args.model_name in ['gpt2-xl', 'gpt-j-6b', 'meta-llama/Llama-2-7b-chat-hf']:
         tokenizer = load_local_model_or_tokenizer(args.model_name, 'tokenizer')
         if tokenizer is None:
             tokenizer = AutoTokenizer.from_pretrained(args.model_name)
         model = load_local_model_or_tokenizer(args.model_name, 'model')
         if model is None:
-            model = AutoModelForCausalLM.from_pretrained(args.model_name)
+            model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=args.model_name, torch_dtype=args.torch_dtype)
         tokenizer.pad_token = tokenizer.eos_token
     else:
         raise NotImplementedError(f"model_name: {args.model_name}")

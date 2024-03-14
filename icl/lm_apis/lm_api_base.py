@@ -25,7 +25,7 @@ class LMForwardAPI(nn.Module):
                           label_dict.items()}
         self.position_offset = 0
 
-        assert model_name in ['gpt2-xl', 'gpt-j-6b']
+        assert model_name in ['gpt2-xl', 'gpt-j-6b', 'meta-llama/Llama-2-7b-chat-hf']
 
     @property
     def device(self):
@@ -46,7 +46,7 @@ class LMForwardAPI(nn.Module):
             past_key_values = self.get_past_key_values(inputs)
             kwargs['past_key_values'] = past_key_values
             inputs['attention_mask'] = self.get_mask_with_past_key_values(inputs['attention_mask'])
-            if self.model_name in ['gpt-j-6b','gpt2-xl']:
+            if self.model_name in ['gpt-j-6b','gpt2-xl', 'meta-llama/Llama-2-7b-chat-hf']:
                 bsz, sql = inputs['input_ids'].shape
                 position_ids = torch.arange(sql, dtype=torch.long, device=self.device).repeat(bsz, 1)
                 position_ids = position_ids + self.position_offset
